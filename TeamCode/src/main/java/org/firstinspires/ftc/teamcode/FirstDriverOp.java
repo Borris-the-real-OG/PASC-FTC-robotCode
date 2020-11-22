@@ -34,9 +34,9 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-@TeleOp(name="Mechanum Op Calibration", group="Linear Opmode")
+@TeleOp(name="First Driver Op", group="Linear Opmode")
 //@Disabled
-public class MecanumOP extends LinearOpMode {
+public class FirstDriverOp extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -47,10 +47,10 @@ public class MecanumOP extends LinearOpMode {
         telemetry.update();
 
         JesusBot robot = new JesusBot(hardwareMap);
-
-        // Calibration values
-        double frontLeftTweak = 0, frontRightTweak = 0, backLeftTweak = 0, backRightTweak = 0;
-        double negFlip = 1;
+        boolean reverseConveyor = false;
+        int launcherSpeedLevel = 1;
+        double maxLaunchSpeed = 200;
+        boolean releasedRoller = false;
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -60,42 +60,51 @@ public class MecanumOP extends LinearOpMode {
         while (opModeIsActive()) {
 
             // Setup a variable for each drive wheel to save power level for telemetry
-            double vertical = -gamepad1.left_stick_y;
-            double horizontal = -gamepad1.left_stick_x;
-            double turn = gamepad1.right_stick_x;
-            turn /= 2;
+            double vertical = -gamepad1.right_stick_y;
+            double horizontal = -gamepad1.right_stick_x;
+            double turn = gamepad1.left_stick_x;
 
             double frontLeftPower = Range.clip(vertical + horizontal + turn, -1 ,1);
             double frontRightPower = Range.clip(vertical - horizontal - turn, -1, 1);
             double backLeftPower = Range.clip(vertical - horizontal + turn, -1, 1);
             double backRightPower = Range.clip(vertical + horizontal - turn, -1, 1);
+            double conveyorPower = reverseConveyor ? gamepad1.left_trigger : -gamepad1.left_trigger;
+            double rollerPower = gamepad1.right_trigger;
 
-            // Tweak time
-            if (gamepad1.a) {
-                negFlip *= -1;
+            if (gamepad1.left_bumper) reverseConveyor = !reverseConveyor;
+
+            if (gamepad1.b){
+                robot.rollerRelease.setPosition(releasedRoller?0:1);
+                releasedRoller = !releasedRoller;
             }
 
-            if (gamepad1.dpad_right) {
-                frontLeftTweak += (0.01 * negFlip);
-            } else if (gamepad1.dpad_up) {
-                frontRightTweak += (0.01 * negFlip);
-            } else if (gamepad1.dpad_left) {
-                backLeftTweak += (0.01 * negFlip);
-            } else if (gamepad1.dpad_down) {
-                backRightTweak += (0.01 * negFlip);
-            }
+            if (gamepad1.dpad_up) robot.armServo.setPosition(0);
+            else if (gamepad1.dpad_down) robot.armServo.setPosition(1);
+
+            if (gamepad1.dpad_left) robot.clampServo.setPosition(0);
+            else if (gamepad1.dpad_right) robot.clampServo.setPosition(1);
+
+            if (gamepad1.y)launcherSpeedLevel++;
+            else if (gamepad1.a)launcherSpeedLevel+=3;
+            launcherSpeedLevel%=4;
+            double launcherSpeed = gamepad1.right_bumper ? maxLaunchSpeed/4*launcherSpeedLevel:0;
 
             // Send calculated power to wheels
-            robot.frontLeft.setPower(frontLeftPower + frontLeftTweak);
-            robot.frontRight.setPower(frontRightPower + frontRightTweak);
-            robot.backLeft.setPower(backLeftPower + backLeftTweak);
-            robot.backRight.setPower(backRightPower + backRightTweak);
+            robot.frontLeft.setPower(frontLeftPower);
+            robot.frontRight.setPower(frontRightPower);
+            robot.backLeft.setPower(backLeftPower);
+            robot.backRight.setPower(backRightPower);
+            robot.conveyor.setPower(conveyorPower);
+            robot.roller.setPower(rollerPower);
+            robot.rightLauncher.setVelocity(launcherSpeed);
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Motors", "FL (%.2f), FR (%.2f), BL (%.2f), BR (%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower);
+            telemetry.addData("Motors", "FL (%.2f), FR (%.2f), BL (%.2f), BR (%.2f), C (%.2f), R(%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower, conveyorPower, rollerPower);
+            //telemetry.addData("Motors", "FL (%.2f), FR (%.2f), BL (%.2f), BR (%.2f), C (%.2f), R(%.2f)", robot.frontLeft.getPower(), robot.frontRight.getPower(), robot.backLeft.getPower(), robot.backRight.getPower(), robot.conveyor.getPower(), robot.roller.getPower());
             telemetry.addData("Encoders", "FL (%d), FR (%d), BL (%d), BR (%d)", robot.frontLeft.getCurrentPosition(), robot.frontRight.getCurrentPosition(), robot.backLeft.getCurrentPosition(), robot.backRight.getCurrentPosition());
-            telemetry.addData("Motor Tweaks", "FL (%d), FR (%d), BL (%d), BR (%d)", frontLeftTweak, frontRightTweak, backLeftTweak, backRightTweak);
+            telemetry.addData("Servo", "Arm (%.2f), Clamp (%.2f), Release (%.2f )",robot.armServo.getPosition(),robot.clampServo.getPosition(),robot.rollerRelease.getPosition());
+            telemetry.addData("Velocity",launcherSpeed);
             telemetry.update();
         }
 

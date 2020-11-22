@@ -30,7 +30,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 
 class JesusBot {
@@ -40,14 +43,28 @@ class JesusBot {
     final static double ONE_DEGREE = FULL_ROBOTATION / 360;
 
     // OpMode members used by MecanumWheels
+    DcMotorEx leftLauncher;
+    DcMotorEx rightLauncher;
     DcMotor frontLeft;
     DcMotor frontRight;
     DcMotor backLeft;
     DcMotor backRight;
+    DcMotor roller;
+    DcMotor conveyor;
+    Servo armServo;
+    Servo clampServo;
+    Servo rollerRelease;
 
     JesusBot(HardwareMap hardwareMap){
 
         // Define all hardware
+        armServo = hardwareMap.get(Servo.class, "armServo");
+        clampServo = hardwareMap.get(Servo.class, "clampServo");
+        rollerRelease = hardwareMap.get(Servo.class, "rollerRelease");
+        roller = hardwareMap.get(DcMotor.class, "roller");
+        conveyor = hardwareMap.get(DcMotor.class, "conveyor");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
         frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
         frontRight = hardwareMap.get(DcMotor.class, "frontRight");
         backLeft = hardwareMap.get(DcMotor.class,"backLeft");
@@ -58,10 +75,18 @@ class JesusBot {
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
         backRight.setDirection(DcMotor.Direction.FORWARD);
+        conveyor.setDirection(DcMotorSimple.Direction.FORWARD);
+        roller.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftLauncher.setDirection(DcMotor.Direction.FORWARD);
+        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
 
         frontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        conveyor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        roller.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 }
